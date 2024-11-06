@@ -1,19 +1,38 @@
-use plotters::coord::types::RangedCoordf32;
 use plotters::prelude::*;
+use std::env;
 use std::fs::File;
 use std::io::{stdin, BufRead, BufReader};
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let pointsfile: String;
+    let routefile: String;
+    let outfile: String;
     let mut cities: Vec<(i32, i32)> = Vec::<(i32, i32)>::new();
-    let mut route: Vec<(usize)> = Vec::<(usize)>::new();
+    let mut route: Vec<usize> = Vec::<usize>::new();
 
-    let filename = match read_filename("points data") {
-        Ok(name) => name,
-        Err(_) => return,
-    };
+    if args.len() == 4 {
+        pointsfile = args[1].clone();
+        routefile = args[2].clone();
+        outfile = args[3].clone();
+    } else {
+        pointsfile = match read_filename("points data") {
+            Ok(name) => name,
+            Err(_) => return,
+        };
 
-    let mut i: usize = 1;
-    for result in BufReader::new(File::open(filename.trim()).unwrap()).lines() {
+        routefile = match read_filename("route data") {
+            Ok(name) => name,
+            Err(_) => return,
+        };
+
+        outfile = match read_filename("output") {
+            Ok(name) => name,
+            Err(_) => return,
+        };
+    }
+
+    for result in BufReader::new(File::open(pointsfile.trim()).unwrap()).lines() {
         let line = match result {
             Ok(line) => line,
             Err(_) => continue,
@@ -22,16 +41,9 @@ fn main() {
         let x = v[0];
         let y = v[1];
         cities.push((x, y));
-        i += 1;
     }
 
-    let filename = match read_filename("route data") {
-        Ok(filename) => filename,
-        Err(_) => return,
-    };
-
-    i = 1;
-    for result in BufReader::new(File::open(filename.trim()).unwrap()).lines() {
+    for result in BufReader::new(File::open(routefile.trim()).unwrap()).lines() {
         let line = match result {
             Ok(line) => line,
             Err(_) => continue,
@@ -41,10 +53,9 @@ fn main() {
             Err(_) => continue,
         };
         route.push(r);
-        i += 1;
     }
 
-    let mut root = BitMapBackend::new("dots_and_lines.png", (1920, 1080)).into_drawing_area();
+    let mut root = BitMapBackend::new(outfile.trim(), (1920, 1080)).into_drawing_area();
     let _ = root.fill(&WHITE);
     root = root.margin(2, 2, 2, 2);
 
