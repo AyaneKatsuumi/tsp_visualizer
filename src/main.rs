@@ -3,19 +3,43 @@ use std::env;
 use std::fs::File;
 use std::io::{stdin, BufRead, BufReader};
 
+const MODE_DAT: i32 = 0;
+const MODE_CSV: i32 = 1;
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let pointsfile: String;
     let routefile: String;
     let outfile: String;
+    let mode;
     let mut cities: Vec<(i32, i32)> = Vec::<(i32, i32)>::new();
     let mut route: Vec<usize> = Vec::<usize>::new();
 
-    if args.len() == 4 {
-        pointsfile = args[1].clone();
-        routefile = args[2].clone();
-        outfile = args[3].clone();
+    if args.len() == 5 {
+        mode = match args[1].parse::<i32>() {
+            Ok(m) => m,
+            Err(e) => -1,
+        };
+        if mode == -1 {
+            return;
+        }
+        pointsfile = args[2].clone();
+        routefile = args[3].clone();
+        outfile = args[4].clone();
     } else {
+        let mut buf = String::new();
+        match stdin().read_line(&mut buf) {
+            Ok(_) => (),
+            Err(e) => eprintln!("{}", e),
+        }
+        mode = match buf.parse::<i32>() {
+            Ok(m) => m,
+            Err(e) => -1,
+        };
+        if mode == -1 {
+            return;
+        }
+
         pointsfile = match read_filename("points data") {
             Ok(name) => name,
             Err(_) => return,
@@ -32,12 +56,18 @@ fn main() {
         };
     }
 
+    let delim = match mode {
+        MODE_DAT => ' ',
+        MODE_CSV => ',',
+        _ => ' ',
+    };
+
     for result in BufReader::new(File::open(pointsfile.trim()).unwrap()).lines() {
         let line = match result {
             Ok(line) => line,
             Err(_) => continue,
         };
-        let v: Vec<i32> = line.split(',').map(|k| k.parse().unwrap()).collect();
+        let v: Vec<i32> = line.split(delim).map(|k| k.parse().unwrap()).collect();
         let x = v[0];
         let y = v[1];
         cities.push((x, y));
